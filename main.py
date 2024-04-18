@@ -66,47 +66,64 @@ for i in range(max(len(boys), len(girls))):
 
 
 # List of fielding positions
-positions = ['C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'Rover']
+positions = [ '1B', '2B', '3B', 'SS', 'LF', 'CF', 'Rover'] 
+# removed C and RF
 
 # List of girl's preferred positions
 girls_positions = ['C', '2B', '3B', 'RF', 'Rover']
 
 # Function to generate batting order and fielding positions
 def generate_lineup(boys, girls, positions, girls_positions):
-    fielding_positions = {}
-    sitting_out = {}
+    fielding_positions = {i: {} for i in range(1, 7)}
+    sitting_out = {0: []}
+    all_players = boys + girls
 
     for inning in range(1, 7):
-        all_players = boys + girls
-        fielding_positions[inning] = {}
-        players_this_inning = all_players.copy()
+        players_this_inning = all_players[:]
+        positions_copy = positions[:]
+        girls_positions_copy = girls_positions[:]
+        players_sitting_out = []
 
-        girls_in_positions = random.sample([girl for girl in girls if girl in players_this_inning], min(3, len(girls)))
-        for girl in girls_in_positions:
-            players_this_inning.remove(girl)
+        # Prioritize players who sat out last inning
+        for player in sitting_out[inning - 1]:
+            if player in players_this_inning:
+                players_this_inning.remove(player)
+                if positions_copy and player in boys:
+                    position = random.choice(positions_copy)
+                    positions_copy.remove(position)
+                    if position in girls_positions_copy:
+                        girls_positions_copy.remove(position)
+                    fielding_positions[inning][player] = position
+                elif girls_positions_copy and player in girls:
+                    position = random.choice(girls_positions_copy)
+                    girls_positions_copy.remove(position)
+                    if position in positions_copy:
+                        positions_copy.remove(position)
+                    fielding_positions[inning][player] = position
+                else:
+                    players_sitting_out.append(player)
 
-        boys_in_positions = random.sample([boy for boy in boys if boy in players_this_inning], min(len(positions) - len(girls_in_positions), len(boys)))
-        for boy in boys_in_positions:
-            players_this_inning.remove(boy)
+        for player in players_this_inning:
+                if player in girls and girls_positions_copy:
+                    position = random.choice(girls_positions_copy)
+                    girls_positions_copy.remove(position)
+                    if position in positions_copy:
+                        positions_copy.remove(position)
+                    fielding_positions[inning][player] = position
+                elif player in boys and positions_copy:
+                    position = random.choice(positions_copy)
+                    positions_copy.remove(position)
+                    if position in girls_positions_copy:
+                        girls_positions_copy.remove(position)
+                    fielding_positions[inning][player] = position
+                else:
+                    players_sitting_out.append(player)
 
-        players_in_positions = girls_in_positions + boys_in_positions
-        random.shuffle(players_in_positions)
+        # Determine who is sitting out this inning
+        sitting_out[inning] = players_sitting_out
 
-        positions_copy = positions.copy()
-        girls_positions_copy = girls_positions.copy()
-
-        for girl in girls_in_positions:
-            girl_position = random.choice(girls_positions_copy)
-            girls_positions_copy.remove(girl_position)
-            positions_copy.remove(girl_position)
-            fielding_positions[inning][girl] = girl_position
-
-        for boy in boys_in_positions:
-            boy_position = random.choice(positions_copy)
-            positions_copy.remove(boy_position)
-            fielding_positions[inning][boy] = boy_position
-
-        sitting_out[inning] = players_this_inning
+        # Shuffle players for the next inning
+        random.shuffle(all_players)
 
     return fielding_positions, sitting_out
 
