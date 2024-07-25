@@ -3,7 +3,7 @@ import random
 
 # Read players from csv file
 df = pd.read_csv('players.csv')  # replace with your csv file path
-
+pp = pd.read_csv('preferred_positions.csv')
 # # Extract players' names
 # players = df['Name'].tolist()  # replace 'Name' with your column name
 
@@ -25,7 +25,9 @@ df = pd.read_csv('players.csv')  # replace with your csv file path
 
 # Extract players' names
 players = df['Name'].tolist()  # replace 'Name' with your column name
-
+players_preferred_positions = pd.merge(df[['Name']], pp, on='Name', how='left')
+print (players_preferred_positions)
+breakpoint()
 # Separate players by gender
 boys = df[df['Gender'] == 'M']['Name'].tolist()
 girls = df[df['Gender'] == 'F']['Name'].tolist()
@@ -63,8 +65,72 @@ for i in range(max(len(boys), len(girls))):
         batting_order.append(girls_pitchers[girls_pitcher_index])
         girls_pitcher_index += 1
 
+# list of all positions
+all_positions = [ '1B', '2B', '3B', 'C', 'SS', 'LF', 'RF', 'CF', 'R']
 
+import random
+from collections import defaultdict
 
+def generate_lineup_with_preferences(boys, girls, all_positions, players_preferred_positions):
+    all_players = boys + girls
+    num_players = len(all_players)
+    num_positions = len(all_positions)
+    num_iterations = 7
+    
+    # Initialize a dictionary to keep track of consecutive sit-outs
+    sit_out_count = {player: 0 for player in all_players}
+    
+    # Create a preference matrix
+    preference_matrix = {player: [0] * len(all_positions) for player in all_players}
+    for _, row in players_preferred_positions.iterrows():
+        player = row['Name']
+        for i, pos in enumerate(['P1', 'P2', 'P3']):
+            if row[pos] in all_positions:
+                preference_matrix[player][all_positions.index(row[pos])] = 3 - i
+    print (preference_matrix)
+    breakpoint()
+    lineups = []
+    
+    for _ in range(num_iterations):
+        available_players = [p for p in all_players if sit_out_count[p] < 1]
+        lineup = []
+        
+        # Assign positions based on preferences
+        for position in all_positions:
+            candidates = sorted(available_players, key=lambda p: preference_matrix[p][all_positions.index(position)], reverse=True)
+            if candidates:
+                player = random.choice(candidates[:max(2, len(candidates)//3)])  # Choose from top candidates
+                lineup.append((player, position))
+                available_players.remove(player)
+        
+        # Fill remaining positions randomly
+        while len(lineup) < num_positions and available_players:
+            player = random.choice(available_players)
+            position = random.choice([pos for pos in all_positions if pos not in [p[1] for p in lineup]])
+            lineup.append((player, position))
+            available_players.remove(player)
+        
+        # Update sit-out counts
+        for player in all_players:
+            if player not in [p[0] for p in lineup]:
+                sit_out_count[player] += 1
+            else:
+                sit_out_count[player] = 0
+        
+        lineups.append(lineup)
+    
+    return lineups
+
+lineups = generate_lineup_with_preferences(boys, girls, all_positions, players_preferred_positions)
+
+# Print the lineups
+for i, lineup in enumerate(lineups, 1):
+    print(f"Lineup {i}:")
+    for player, position in lineup:
+        print(f"  {player}: {position}")
+    print()
+
+breakpoint()
 # List of fielding positions
 positions = [ '1B', '2B', '3B', 'SS', 'LF', 'CF', 'Rover'] 
 # removed C and RF
@@ -135,4 +201,16 @@ for inning in range(1, 7):
     print(f"\nInning {inning}")
     print("Fielding Positions:", fielding_positions[inning])
     print("Sitting:", sitting[inning])
+
+
+
+
+lineups = generate_lineup_with_preferences(boys, girls, all_positions, players_preferred_positions)
+
+# Print the lineups
+for i, lineup in enumerate(lineups, 1):
+    print(f"Lineup {i}:")
+    for player, position in lineup:
+        print(f"  {player}: {position}")
+    print()
 
