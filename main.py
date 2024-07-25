@@ -75,30 +75,29 @@ def generate_lineup_with_preferences(boys, girls, all_positions, players_preferr
     all_players = boys + girls
     num_positions = len(all_positions)
     num_iterations = 7
-    
+
     # Initialize a dictionary to keep track of sit-outs
     sit_out_count = {player: 0 for player in all_players}
-    
+
     # Create a preference matrix from the DataFrame
     preference_matrix = {player: [] for player in all_players}
     for _, row in players_preferred_positions_df.iterrows():
         player = row['Name']
         preferences = [row['P1'], row['P2'], row['P3']]
         preference_matrix[player] = preferences
-    
+
     lineups = []
     sit_out_lists = []
     previous_sit_outs = []
-    
+
     for iteration in range(num_iterations):
         # Prioritize players who sat out in the previous iteration
         lineup_players = previous_sit_outs.copy()
-        if sit_out_list:
-            for player in sit_out_list:
-                if sit_out_count[player] == 3 and player not in lineup_players:
-                    lineup_players.append(player)
-                    print(lineup_players)
-                    breakpoint()
+        
+        # Add players who have sat out 3 times
+        for player in all_players:
+            if sit_out_count[player] == 3 and player not in lineup_players:
+                lineup_players.append(player)
         
         # Add additional players to reach 9, prioritizing those with lower sit-out counts
         remaining_boys = [p for p in boys if p not in lineup_players]
@@ -138,11 +137,12 @@ def generate_lineup_with_preferences(boys, girls, all_positions, players_preferr
         # Update sit-out counts
         for player in sit_out_list:
             sit_out_count[player] += 1
+        
         print(sit_out_count)
         lineups.append(lineup)
         sit_out_lists.append(sit_out_list)
         previous_sit_outs = sit_out_list
-    
+
     return lineups, sit_out_lists
 
 
