@@ -71,64 +71,92 @@ all_positions = [ '1B', '2B', '3B', 'C', 'SS', 'LF', 'RF', 'CF', 'R']
 import random
 from collections import defaultdict
 
-def generate_lineup_with_preferences(boys, girls, all_positions, players_preferred_positions):
+def generate_lineup_with_preferences(boys, girls, all_positions, players_preferred_positions_df):
     all_players = boys + girls
-    num_players = len(all_players)
     num_positions = len(all_positions)
     num_iterations = 7
     
-    # Initialize a dictionary to keep track of consecutive sit-outs
+    # Initialize a dictionary to keep track of sit-outs
     sit_out_count = {player: 0 for player in all_players}
     
-    # Create a preference matrix
-    preference_matrix = {player: [0] * len(all_positions) for player in all_players}
-    for _, row in players_preferred_positions.iterrows():
+    # Create a preference matrix from the DataFrame
+    preference_matrix = {player: [] for player in all_players}
+    for _, row in players_preferred_positions_df.iterrows():
         player = row['Name']
-        for i, pos in enumerate(['P1', 'P2', 'P3']):
-            if row[pos] in all_positions:
-                preference_matrix[player][all_positions.index(row[pos])] = 3 - i
-    print (preference_matrix)
-    breakpoint()
-    lineups = []
+        preferences = [row['P1'], row['P2'], row['P3']]
+        preference_matrix[player] = preferences
     
-    for _ in range(num_iterations):
-        available_players = [p for p in all_players if sit_out_count[p] < 1]
+    lineups = []
+    sit_out_lists = []
+    previous_sit_outs = []
+    
+    for iteration in range(num_iterations):
+        # Prioritize players who sat out in the previous iteration
+        lineup_players = previous_sit_outs.copy()
+        if sit_out_list:
+            for player in sit_out_list:
+                if sit_out_count[player] == 3 and player not in lineup_players:
+                    lineup_players.append(player)
+                    print(lineup_players)
+                    breakpoint()
+        
+        # Add additional players to reach 9, prioritizing those with lower sit-out counts
+        remaining_boys = [p for p in boys if p not in lineup_players]
+        remaining_girls = [p for p in girls if p not in lineup_players]
+        
+        sorted_boys = sorted(remaining_boys, key=lambda x: (sit_out_count[x], random.random()))
+        sorted_girls = sorted(remaining_girls, key=lambda x: (sit_out_count[x], random.random()))
+        random.shuffle(sorted_girls)
+        random.shuffle(sorted_boys)
+        while len(lineup_players) < 9:
+            if len([p for p in lineup_players if p in girls]) < 4 and sorted_girls:
+                lineup_players.append(sorted_girls.pop(0))
+            elif sorted_boys:
+                lineup_players.append(sorted_boys.pop(0))
+            else:
+                lineup_players.append(sorted_girls.pop(0))
+        
         lineup = []
         
         # Assign positions based on preferences
         for position in all_positions:
-            candidates = sorted(available_players, key=lambda p: preference_matrix[p][all_positions.index(position)], reverse=True)
+            candidates = [p for p in lineup_players if position in preference_matrix[p]]
             if candidates:
-                player = random.choice(candidates[:max(2, len(candidates)//3)])  # Choose from top candidates
+                player = random.choice(candidates)
                 lineup.append((player, position))
-                available_players.remove(player)
+                lineup_players.remove(player)
         
-        # Fill remaining positions randomly
-        while len(lineup) < num_positions and available_players:
-            player = random.choice(available_players)
+        # Fill remaining positions randomly if needed
+        while len(lineup) < num_positions and lineup_players:
+            player = lineup_players.pop(0)
             position = random.choice([pos for pos in all_positions if pos not in [p[1] for p in lineup]])
             lineup.append((player, position))
-            available_players.remove(player)
+        
+        # Determine who's sitting out this iteration
+        sit_out_list = [p for p in all_players if p not in [player for player, _ in lineup]]
         
         # Update sit-out counts
-        for player in all_players:
-            if player not in [p[0] for p in lineup]:
-                sit_out_count[player] += 1
-            else:
-                sit_out_count[player] = 0
-        
+        for player in sit_out_list:
+            sit_out_count[player] += 1
+        print(sit_out_count)
         lineups.append(lineup)
+        sit_out_lists.append(sit_out_list)
+        previous_sit_outs = sit_out_list
     
-    return lineups
+    return lineups, sit_out_lists
 
-lineups = generate_lineup_with_preferences(boys, girls, all_positions, players_preferred_positions)
+
+
+
+lineups, sitting = generate_lineup_with_preferences(boys, girls, all_positions, players_preferred_positions)
 
 # Print the lineups
-for i, lineup in enumerate(lineups, 1):
+for i, (lineup, sit_out_list) in enumerate(zip(lineups, sitting), 1):
     print(f"Lineup {i}:")
     for player, position in lineup:
         print(f"  {player}: {position}")
-    print()
+    print(f"Sitting out: {', '.join(sit_out_list)}\n")
+
 
 breakpoint()
 # List of fielding positions
