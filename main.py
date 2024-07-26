@@ -93,7 +93,6 @@ def generate_lineup_with_preferences(boys, girls, all_positions, players_preferr
     for iteration in range(num_iterations):
         # Prioritize players who sat out in the previous iteration
         lineup_players = previous_sit_outs.copy()
-        
         # Add players who have sat out 3 times
         for player in all_players:
             if sit_out_count[player] == 3 and player not in lineup_players:
@@ -107,6 +106,36 @@ def generate_lineup_with_preferences(boys, girls, all_positions, players_preferr
         sorted_girls = sorted(remaining_girls, key=lambda x: (sit_out_count[x], random.random()))
         random.shuffle(sorted_girls)
         random.shuffle(sorted_boys)
+        
+        if iteration == 4:
+            for player in all_players:
+                if sit_out_count[player] == 0 and player not in lineup_players:
+                    if player in sorted_boys:
+                        sorted_boys.remove(player)
+                    if player in sorted_girls:
+                        sorted_girls.remove(player)
+                    print(player, "sat 0")
+        if iteration == 5:
+            b = 0
+            g = 0
+            for player in all_players:
+                if sit_out_count[player] == 1 or sit_out_count[player] == 0 and player not in lineup_players:
+                    if player in sorted_boys and b<2:
+                        sorted_boys.remove(player)
+                        b+=1
+                    if player in sorted_girls and g<2:
+                        sorted_girls.remove(player)
+                        g+=1
+                    print(player, "max 2")
+        if iteration == 6:
+            for player in all_players:
+                if sit_out_count[player] == 1 and player not in lineup_players:
+                    if player in sorted_boys:
+                        sorted_boys.remove(player)
+                    if player in sorted_girls:
+                        sorted_girls.remove(player)
+                    print(player)
+
         while len(lineup_players) < 9:
             if len([p for p in lineup_players if p in girls]) < 4 and sorted_girls:
                 lineup_players.append(sorted_girls.pop(0))
