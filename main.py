@@ -1,33 +1,15 @@
 import pandas as pd
 import random
+from collections import defaultdict
 
 # Read players from csv file
 df = pd.read_csv('players.csv')  # replace with your csv file path
 pp = pd.read_csv('preferred_positions.csv')
-# # Extract players' names
-# players = df['Name'].tolist()  # replace 'Name' with your column name
-
-# # Separate players by gender
-# boys = df[df['Gender'] == 'M']['Name'].tolist()
-# girls = df[df['Gender'] == 'F']['Name'].tolist()
-
-# # Shuffle players within each gender
-# random.shuffle(boys)
-# random.shuffle(girls)
-
-# # Create batting order
-# batting_order = []
-# for i in range(max(len(boys), len(girls))):
-#     if i < len(boys):
-#         batting_order.append(boys[i])
-#     if i < len(girls):
-#         batting_order.append(girls[i])
 
 # Extract players' names
 players = df['Name'].tolist()  # replace 'Name' with your column name
 players_preferred_positions = pd.merge(df[['Name']], pp, on='Name', how='left')
-print (players_preferred_positions)
-breakpoint()
+
 # Separate players by gender
 boys = df[df['Gender'] == 'M']['Name'].tolist()
 girls = df[df['Gender'] == 'F']['Name'].tolist()
@@ -52,24 +34,38 @@ random.shuffle(girls_pitchers)
 batting_order = []
 boys_pitcher_index = 0
 girls_pitcher_index = 0
-for i in range(max(len(boys), len(girls))):
-    if i < len(boys):
-        batting_order.append(boys[i])
-    if i < len(girls):
-        batting_order.append(girls[i])
-    # Insert pitcher every 5th position, if available
-    if (i+1) % 5 == 0 and boys_pitcher_index < len(boys_pitchers):
-        batting_order.append(boys_pitchers[boys_pitcher_index])
-        boys_pitcher_index += 1
-    if (i+1) % 5 == 0 and girls_pitcher_index < len(girls_pitchers):
-        batting_order.append(girls_pitchers[girls_pitcher_index])
-        girls_pitcher_index += 1
+
+if len(girls) <= (len(boys) - 1):
+    for i in range(max(len(boys), len(girls))):
+        # Insert pitcher every 3rd and 5th position, if available
+        if (i+1) % 3 == 0 and boys_pitcher_index < len(boys_pitchers):
+            batting_order.append(boys_pitchers[boys_pitcher_index])
+            boys_pitcher_index += 1
+        if (i+1) % 5 == 0 and girls_pitcher_index < len(girls_pitchers):
+            batting_order.append(girls_pitchers[girls_pitcher_index])
+            girls_pitcher_index += 1
+        # populate everyone else
+        if i < len(boys_not_pitch):
+            batting_order.append(boys_not_pitch[i])
+        if i < len(girls_not_pitch):
+            batting_order.append(girls_not_pitch[i])
+else:
+    for i in range(max(len(boys), len(girls))):
+        # Insert pitcher every 3rd position, if available
+        if (i+1) % 3 == 0 and boys_pitcher_index < len(boys_pitchers):
+            batting_order.append(boys_pitchers[boys_pitcher_index])
+            boys_pitcher_index += 1
+        # populate everyone else
+        if i < len(boys_not_pitch):
+            batting_order.append(boys_not_pitch[i])
+            batting_order.append("G")
+    batting_order.append("Girls rotation")
+    batting_order.append(girls_not_pitch)
+
 
 # list of all positions
 all_positions = [ '1B', '2B', '3B', 'C', 'SS', 'LF', 'RF', 'CF', 'R']
 
-import random
-from collections import defaultdict
 
 def generate_lineup_with_preferences(boys, girls, all_positions, players_preferred_positions_df):
     all_players = boys + girls
@@ -107,6 +103,7 @@ def generate_lineup_with_preferences(boys, girls, all_positions, players_preferr
         random.shuffle(sorted_girls)
         random.shuffle(sorted_boys)
         
+        # Handling of subs: These numbers may need to be changed or commented out if there are not enough players
         if iteration == 4:
             for player in all_players:
                 if sit_out_count[player] == 0 and player not in lineup_players:
@@ -114,11 +111,11 @@ def generate_lineup_with_preferences(boys, girls, all_positions, players_preferr
                         sorted_boys.remove(player)
                     if player in sorted_girls:
                         sorted_girls.remove(player)
-                    print(player, "sat 0")
         if iteration == 5:
             b = 0
             g = 0
             for player in all_players:
+                # change sit out count if errors happen on lineup_players.append
                 if sit_out_count[player] == 1 or sit_out_count[player] == 0 and player not in lineup_players:
                     if player in sorted_boys and b<2:
                         sorted_boys.remove(player)
@@ -126,15 +123,14 @@ def generate_lineup_with_preferences(boys, girls, all_positions, players_preferr
                     if player in sorted_girls and g<2:
                         sorted_girls.remove(player)
                         g+=1
-                    print(player, "max 2")
         if iteration == 6:
             for player in all_players:
+                # change sit out count if errors happen on lineup_players.append
                 if sit_out_count[player] == 1 and player not in lineup_players:
                     if player in sorted_boys:
                         sorted_boys.remove(player)
                     if player in sorted_girls:
                         sorted_girls.remove(player)
-                    print(player)
 
         while len(lineup_players) < 9:
             if len([p for p in lineup_players if p in girls]) < 4 and sorted_girls:
@@ -172,12 +168,12 @@ def generate_lineup_with_preferences(boys, girls, all_positions, players_preferr
         sit_out_lists.append(sit_out_list)
         previous_sit_outs = sit_out_list
 
-    return lineups, sit_out_lists
+    return lineups, sit_out_lists, sit_out_count
 
 
 
 
-lineups, sitting = generate_lineup_with_preferences(boys, girls, all_positions, players_preferred_positions)
+lineups, sitting, sit_count = generate_lineup_with_preferences(boys, girls, all_positions, players_preferred_positions)
 
 # Print the lineups
 for i, (lineup, sit_out_list) in enumerate(zip(lineups, sitting), 1):
@@ -187,87 +183,6 @@ for i, (lineup, sit_out_list) in enumerate(zip(lineups, sitting), 1):
     print(f"Sitting out: {', '.join(sit_out_list)}\n")
 
 
-breakpoint()
-# List of fielding positions
-positions = [ '1B', '2B', '3B', 'SS', 'LF', 'CF', 'Rover'] 
-# removed C and RF
-
-# List of girl's preferred positions
-girls_positions = ['C', '2B', '3B', 'RF', 'Rover']
-
-# Function to generate batting order and fielding positions
-def generate_lineup(boys, girls, positions, girls_positions):
-    fielding_positions = {i: {} for i in range(1, 7)}
-    sitting_out = {0: []}
-    all_players = boys + girls
-
-    for inning in range(1, 7):
-        players_this_inning = all_players[:]
-        positions_copy = positions[:]
-        girls_positions_copy = girls_positions[:]
-        players_sitting_out = []
-
-        # Prioritize players who sat out last inning
-        for player in sitting_out[inning - 1]:
-            if player in players_this_inning:
-                players_this_inning.remove(player)
-                if positions_copy and player in boys:
-                    position = random.choice(positions_copy)
-                    positions_copy.remove(position)
-                    if position in girls_positions_copy:
-                        girls_positions_copy.remove(position)
-                    fielding_positions[inning][player] = position
-                elif girls_positions_copy and player in girls:
-                    position = random.choice(girls_positions_copy)
-                    girls_positions_copy.remove(position)
-                    if position in positions_copy:
-                        positions_copy.remove(position)
-                    fielding_positions[inning][player] = position
-                else:
-                    players_sitting_out.append(player)
-
-        for player in players_this_inning:
-                if player in girls and girls_positions_copy:
-                    position = random.choice(girls_positions_copy)
-                    girls_positions_copy.remove(position)
-                    if position in positions_copy:
-                        positions_copy.remove(position)
-                    fielding_positions[inning][player] = position
-                elif player in boys and positions_copy:
-                    position = random.choice(positions_copy)
-                    positions_copy.remove(position)
-                    if position in girls_positions_copy:
-                        girls_positions_copy.remove(position)
-                    fielding_positions[inning][player] = position
-                else:
-                    players_sitting_out.append(player)
-
-        # Determine who is sitting out this inning
-        sitting_out[inning] = players_sitting_out
-
-        # Shuffle players for the next inning
-        random.shuffle(all_players)
-
-    return fielding_positions, sitting_out
-
-# Generate and print batting order and fielding positions
-fielding_positions, sitting = generate_lineup(boys, girls, positions, girls_positions)
-
+print(sit_count)
 print(batting_order)
-for inning in range(1, 7):
-    print(f"\nInning {inning}")
-    print("Fielding Positions:", fielding_positions[inning])
-    print("Sitting:", sitting[inning])
-
-
-
-
-lineups = generate_lineup_with_preferences(boys, girls, all_positions, players_preferred_positions)
-
-# Print the lineups
-for i, lineup in enumerate(lineups, 1):
-    print(f"Lineup {i}:")
-    for player, position in lineup:
-        print(f"  {player}: {position}")
-    print()
 
