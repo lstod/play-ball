@@ -71,7 +71,11 @@ def generate_lineup_with_preferences(boys, girls, all_positions, players_preferr
     all_players = boys + girls
     num_positions = len(all_positions)
     num_iterations = 7
-
+    girl_sub_per_inning = len(girls) - 4
+    boy_sub_per_inning = len(boys) - 5
+    if boy_sub_per_inning < 0:
+        boy_sub_per_inning = 0
+        girl_sub_per_inning = len(girls) - 5
     # Initialize a dictionary to keep track of sit-outs
     sit_out_count = {player: 0 for player in all_players}
 
@@ -105,32 +109,40 @@ def generate_lineup_with_preferences(boys, girls, all_positions, players_preferr
         
         # Handling of subs: These numbers may need to be changed or commented out if there are not enough players
         if iteration == 4:
+            b=0
+            g=0
             for player in all_players:
                 if sit_out_count[player] == 0 and player not in lineup_players:
-                    if player in sorted_boys:
+                    if player in sorted_boys and b < boy_sub_per_inning:
                         sorted_boys.remove(player)
-                    if player in sorted_girls:
+                        b+=1
+                    if player in sorted_girls and g < girl_sub_per_inning:
                         sorted_girls.remove(player)
+                        g+=1
         if iteration == 5:
             b = 0
             g = 0
             for player in all_players:
                 # change sit out count if errors happen on lineup_players.append
                 if sit_out_count[player] == 1 or sit_out_count[player] == 0 and player not in lineup_players:
-                    if player in sorted_boys and b<2:
+                    if player in sorted_boys and b < boy_sub_per_inning:
                         sorted_boys.remove(player)
                         b+=1
-                    if player in sorted_girls and g<2:
+                    if player in sorted_girls and g < girl_sub_per_inning:
                         sorted_girls.remove(player)
                         g+=1
         if iteration == 6:
+            b = 0
+            g = 0
             for player in all_players:
                 # change sit out count if errors happen on lineup_players.append
-                if sit_out_count[player] == 1 and player not in lineup_players:
-                    if player in sorted_boys:
+                if sit_out_count[player] == 1 or sit_out_count[player] == 0 and player not in lineup_players:
+                    if player in sorted_boys and b < boy_sub_per_inning:
                         sorted_boys.remove(player)
-                    if player in sorted_girls:
+                        b+=1
+                    if player in sorted_girls and g < girl_sub_per_inning:
                         sorted_girls.remove(player)
+                        g+=1
 
         while len(lineup_players) < 9:
             if len([p for p in lineup_players if p in girls]) < 4 and sorted_girls:
@@ -163,7 +175,6 @@ def generate_lineup_with_preferences(boys, girls, all_positions, players_preferr
         for player in sit_out_list:
             sit_out_count[player] += 1
         
-        print(sit_out_count)
         lineups.append(lineup)
         sit_out_lists.append(sit_out_list)
         previous_sit_outs = sit_out_list
