@@ -194,6 +194,6 @@ for i, (lineup, sit_out_list) in enumerate(zip(lineups, sitting), 1):
     print(f"Sitting out: {', '.join(sit_out_list)}\n")
 
 
-print(sit_count)
-print(batting_order)
+print("Times sitting", sit_count)
+print("Batting order", batting_order)
 
