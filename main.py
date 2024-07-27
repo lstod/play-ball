@@ -35,7 +35,7 @@ batting_order = []
 boys_pitcher_index = 0
 girls_pitcher_index = 0
 
-if len(girls) <= (len(boys) - 1):
+if len(girls) >= (len(boys) - 1):
     for i in range(max(len(boys), len(girls))):
         # Insert pitcher every 3rd and 5th position, if available
         if (i+1) % 3 == 0 and boys_pitcher_index < len(boys_pitchers):
@@ -70,7 +70,7 @@ all_positions = [ '1B', '2B', '3B', 'C', 'SS', 'LF', 'RF', 'CF', 'R']
 def generate_lineup_with_preferences(boys, girls, all_positions, players_preferred_positions_df):
     all_players = boys + girls
     num_positions = len(all_positions)
-    num_iterations = 7
+    num_innings = 7
     girl_sub_per_inning = len(girls) - 4
     boy_sub_per_inning = len(boys) - 5
     if boy_sub_per_inning < 0:
@@ -90,8 +90,8 @@ def generate_lineup_with_preferences(boys, girls, all_positions, players_preferr
     sit_out_lists = []
     previous_sit_outs = []
 
-    for iteration in range(num_iterations):
-        # Prioritize players who sat out in the previous iteration
+    for inning in range(num_innings):
+        # Prioritize players who sat out in the previous inning
         lineup_players = previous_sit_outs.copy()
         # Add players who have sat out 3 times
         for player in all_players:
@@ -108,7 +108,7 @@ def generate_lineup_with_preferences(boys, girls, all_positions, players_preferr
         random.shuffle(sorted_boys)
         
         # Handling of subs: These numbers may need to be changed or commented out if there are not enough players
-        if iteration == 4:
+        if inning == 4:
             b=0
             g=0
             for player in all_players:
@@ -119,7 +119,7 @@ def generate_lineup_with_preferences(boys, girls, all_positions, players_preferr
                     if player in sorted_girls and g < girl_sub_per_inning:
                         sorted_girls.remove(player)
                         g+=1
-        if iteration == 5:
+        if inning == 5:
             b = 0
             g = 0
             for player in all_players:
@@ -131,7 +131,7 @@ def generate_lineup_with_preferences(boys, girls, all_positions, players_preferr
                     if player in sorted_girls and g < girl_sub_per_inning:
                         sorted_girls.remove(player)
                         g+=1
-        if iteration == 6:
+        if inning == 6:
             b = 0
             g = 0
             for player in all_players:
@@ -168,7 +168,7 @@ def generate_lineup_with_preferences(boys, girls, all_positions, players_preferr
             position = random.choice([pos for pos in all_positions if pos not in [p[1] for p in lineup]])
             lineup.append((player, position))
         
-        # Determine who's sitting out this iteration
+        # Determine who's sitting out this inning
         sit_out_list = [p for p in all_players if p not in [player for player, _ in lineup]]
         
         # Update sit-out counts
@@ -188,7 +188,7 @@ lineups, sitting, sit_count = generate_lineup_with_preferences(boys, girls, all_
 
 # Print the lineups
 for i, (lineup, sit_out_list) in enumerate(zip(lineups, sitting), 1):
-    print(f"Lineup {i}:")
+    print(f"Inning {i}:")
     for player, position in lineup:
         print(f"  {player}: {position}")
     print(f"Sitting out: {', '.join(sit_out_list)}\n")
